@@ -20,6 +20,15 @@
         state: present
       become: true
 
+    - name: Download Helm install script
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0755'
+
+    - name: Run Helm install script
+      command: /tmp/get_helm.sh
+
 - name: Setup Kubernetes Master
   hosts: k3s-master
   become: true
