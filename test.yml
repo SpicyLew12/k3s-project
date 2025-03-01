@@ -1,0 +1,36 @@
+---
+- name: Test NodePort Services
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Define NodePort variables
+      set_fact:
+        node_ip: "k3s-master"
+        http_nodeport: 31080
+        https_nodeport: 31443
+        postgres_nodeport: 30432
+
+    - name: Test HTTP Service on NodePort
+      command: curl -s -o /dev/null -w "%{http_code}" http://{{ node_ip }}:{{ http_nodeport }}
+      register: http_status
+      failed_when: http_status.stdout != "200"
+      changed_when: false
+
+    - name: Test HTTPS Service on NodePort
+      command: curl -sk -o /dev/null -w "%{http_code}" https://{{ node_ip }}:{{ https_nodeport }}
+      register: https_status
+      failed_when: https_status.stdout != "200"
+      changed_when: false
+
+    - name: Test PostgreSQL Connectivity via NodePort
+      command: psql -h {{ node_ip }} -p {{ postgres_nodeport }} -U postgres -c "SELECT 1;"
+      register: postgres_status
+      failed_when: "'1 row' not in postgres_status.stdout"
+      changed_when: false
+
+    - name: Display Test Results
+      debug:
+        msg:
+          - "HTTP NodePort ({{ http_nodeport }}): {{ http_status.stdout }}"
+          - "HTTPS NodePort ({{ https_nodeport }}): {{ https_status.stdout }}"
+          - "PostgreSQL NodePort ({{ postgres_nodeport }}): {{ postgres_status.stdout | default('Connection Failed') }}"

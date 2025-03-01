@@ -1,0 +1,11 @@
+- name: Download and install K3s (Worker)
+  shell: |
+    curl -sfL {{ k3s_install_url }} | K3S_URL=https://{{ k3s_master_node }}:6443 K3S_TOKEN={{ k3s_token }} INSTALL_K3S_VERSION={{ k3s_version }} sh -
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Ensure K3s is running (Worker)
+  systemd:
+    name: k3s-agent
+    state: started
+    enabled: true

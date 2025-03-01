@@ -1,0 +1,13 @@
+- name: Setup Kubernetes Master
+  hosts: k3s-master
+  become: true
+  tasks:
+    - name: delete k3s
+      command: k3s-uninstall.sh
+
+- name: Setup Kubernetes Workers
+  hosts: k3s_workers
+  become: true
+  tasks:
+    - name: delete k3s
+      command: k3s-agent-uninstall.sh

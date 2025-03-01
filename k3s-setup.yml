@@ -1,0 +1,53 @@
+- name: Install Packages on Control Node
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Install sshpass (if not already installed)
+      apt:
+        name: sshpass
+        state: present
+      become: true
+
+    - name: Install python3-pip (if not already installed)
+      apt:
+        name: python3-pip
+        state: present
+      become: true
+
+    - name: Install kubernetes Python library
+      pip:
+        name: kubernetes
+        executable: pip3
+      become: true
+
+- name: Setup Kubernetes Master
+  hosts: k3s-master
+  become: true
+  roles:
+    - k3s-master
+
+- name: Setup Kubernetes Workers
+  hosts: k3s_workers
+  become: true
+  vars:
+    k3s_token: "{{ hostvars['k3s-master']['k3s_token'] }}"
+    k3s_master_node: "{{ hostvars['k3s-master']['ansible_host'] }}"
+  roles:
+    - k3s-worker
+
+- name: Setup Control Node for Deployment
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Fetch kubeconfig from master
+      fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /tmp/k3s.yaml
+        flat: yes
+      delegate_to: k3s-master
+
+    - name: Modify kubeconfig to use the correct server address
+      replace:
+        path: /tmp/k3s.yaml
+        regexp: "https://127.0.0.1:6443"
+        replace: "https://{{ hostvars['k3s-master']['ansible_host'] }}:6443"
